@@ -7,6 +7,7 @@
 #include<QPoint>
 #include<QQueue>
 #include<QColor>
+#include<QTimer>
 #include "managesetdialog.h"
 
 class ParkSpace:public QWidget{
@@ -23,15 +24,26 @@ class parkingWidget : public QGraphicsView
     Q_OBJECT
 public:
     explicit parkingWidget(QWidget *parent = nullptr);
+    ~parkingWidget();
 
 
     void drawPark();
-    void setRowCol(int row1,int col1){row=row1;col=col1;drawPark();}
+    void setRowCol(int row1,int col1);
     void drawline();
 
     bool parkIsFull();
+    
+    void onCarClicked(Car* car);
+    
 signals:
     void sendRowCol_to_managesetdialog(int x,int y);
+    void carClicked(Car* car);
+private slots:
+    void updateFeeDisplay();
+
+private:
+    QTimer* feeUpdateTimer;
+    
 public:
     QGraphicsScene*m_scene;
     QVector<QVector<ParkSpace*>>m_parkset;

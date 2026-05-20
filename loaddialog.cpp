@@ -1,5 +1,6 @@
 #include "loaddialog.h"
 #include "ui_loaddialog.h"
+#include<QCoreApplication>
 #include<QFile>
 #include<QTextStream>
 #include<QMessageBox>
@@ -12,7 +13,7 @@ LoadDialog::LoadDialog(QWidget *parent)
     ui->loadStyle->addItem("管理员登录",0);
     ui->loadStyle->addItem("用户登录",1);
 
-    QString file_name="D:\\QtProject\\VisualParkingManagementSystem\\name_password.txt";
+    QString file_name = QCoreApplication::applicationDirPath() + "/name_password.txt";
     read_name_passward(file_name);
 
 

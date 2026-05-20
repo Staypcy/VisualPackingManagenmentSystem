@@ -27,6 +27,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         parkingwidget.h parkingwidget.cpp
         settingdialog.h settingdialog.cpp settingdialog.ui
         managesetdialog.h managesetdialog.cpp managesetdialog.ui
+        cardetaildialog.h cardetaildialog.cpp cardetaildialog.ui
+        feeservice.h feeservice.cpp
+        pathplanner.h pathplanner.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET VisualParkingManagementSystem APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

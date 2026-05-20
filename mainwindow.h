@@ -41,6 +41,8 @@ private:
 
     int row=4;
     int col=4;
+    
+    bool isCarEntering = false; // 防止快速点击导致同一车位停多辆车
 
 };
 #endif // MAINWINDOW_H

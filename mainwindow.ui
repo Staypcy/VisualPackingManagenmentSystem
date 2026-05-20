@@ -17,7 +17,10 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>可视化停车场管理系统</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QMainWindow { background-color: #f0f0f0; }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="sizePolicy">

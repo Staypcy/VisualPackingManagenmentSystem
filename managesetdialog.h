@@ -5,6 +5,9 @@
 #include<QPushButton>
 #include<QColor>
 #include<QSize>
+#include<QTimer>
+#include<QVector>
+#include<QDateTime>
 
 namespace Ui {
 class manageSetDialog;
@@ -14,6 +17,7 @@ class manageSetDialog;
 class Car:public QPushButton{
 public:
     void setCar(QString carnum,QString carstyle,QColor color);
+    void setCar(QString carnum, QString carstyle, QColor color, QString imagePath);
     Car(QWidget*parent=nullptr){}
 public:
     QString car_num;
@@ -23,6 +27,9 @@ public:
     QSize m_size=QSize(70,30);
     int x_col;
     int y_row;
+    QString car_image_path;
+    QDateTime enter_time;
+    double total_fee;
 };
 
 
@@ -33,15 +40,24 @@ class manageSetDialog : public QDialog
 public:
     explicit manageSetDialog(QWidget *parent = nullptr);
     ~manageSetDialog();
+    
+    void updateParkingMap(QVector<QVector<bool>> map);
+    
 signals:
     void sendNewCar(Car* car);
     void sendGetXY(int x,int y);
     void CarToOut();
 public slots:
-    void setRowCol(int x,int y){row=x;col=y;}
+    void setRowCol(int x,int y);
 private:
+    void startAutoEnter();
+    
     Ui::manageSetDialog *ui;
     QColor color;
+    QTimer* autoTimer;
+    bool isAutoEntering;
+    QVector<QVector<bool>> parkingMap;
+    QString selectedImagePath;
 
     int row=4;
     int col=4;

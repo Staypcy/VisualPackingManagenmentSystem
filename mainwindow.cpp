@@ -8,6 +8,10 @@
 #include<QVector>
 #include<QPoint>
 #include<QPropertyAnimation>
+#include<QSequentialAnimationGroup>
+#include<QParallelAnimationGroup>
+#include "cardetaildialog.h"
+#include "pathplanner.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -25,6 +29,7 @@ MainWindow::MainWindow(QWidget *parent)
         }
         if(loaddlg->exec()==QDialog::Accepted){
             load_state=loaddlg->load_State;
+            loaddlg->close(); // 立即关闭登录窗口
             if (load_state == 0) {
                 QMessageBox::information(this, "提示", "管理员登录成功");
                 update();
@@ -61,27 +66,35 @@ MainWindow::MainWindow(QWidget *parent)
                         //动态属性，相当于添加了一个成员变量
                         car->setProperty("proxy",QVariant::fromValue<QGraphicsProxyWidget*>(proxy));
                         showCarInTheWaitQueue(parkwidget);
+                        
+                        // 连接车辆点击事件
+                        connect(car, &Car::clicked, this, [=](){
+                            CarDetailDialog* dlg = new CarDetailDialog(car, this);
+                            dlg->show();
+                        });
                     });
 
 
                     connect(parkwidget->managewidget,&manageSetDialog::sendGetXY,[=](int xGet,int yGet){
+                        if(isCarEntering) return; // 防止快速点击
+                        // 检查是否有等待的车辆
+                        if(parkwidget->m_wait_carSet.size() == 0){
+                            return; // 队列为空，不执行
+                        }
                         if(!parkwidget->parkIsFull()){
+                            isCarEntering = true;
                             int row=parkwidget->row;
                             int col=parkwidget->col;
                             while(parkwidget->m_parkset[xGet][yGet]->haveCar){
                                 xGet=rand()%row;
                                 yGet=rand()%col;
                             }
-                            if(parkwidget->m_wait_carSet.size()!=0){
-                                Car *car=parkwidget->m_wait_carSet.dequeue();
-                                car->x_col=col;
-                                car->y_row=row;
-                                parkwidget->m_in_carSet.push_back(car);
-                                moveIn(xGet,yGet,car);
-                            }
-
+                            Car *car=parkwidget->m_wait_carSet.dequeue();
+                            car->x_col=xGet;
+                            car->y_row=yGet;
+                            parkwidget->m_in_carSet.push_back(car);
+                            moveIn(xGet,yGet,car);
                         }
-
                     });
 
                     connect(parkwidget->managewidget,&manageSetDialog::CarToOut,[=](){
@@ -162,29 +175,69 @@ void MainWindow::paintEvent(QPaintEvent *event)
 
 void MainWindow::moveIn(int xGet, int yGet,Car *car)
 {
-    QVector<int>y_point;
-
     QGraphicsProxyWidget* proxy=car->property("proxy").value<QGraphicsProxyWidget*>();
     if(proxy==nullptr)return;
 
     QPointF startPos=proxy->pos();
-    QSize size=car->m_size;
+    QSize carSize=car->m_size;
 
-    QPointF tempPos=getParkSpaceCenter(xGet,yGet);
-    QPointF endPos=QPointF(tempPos.x()-size.width()/2.0,tempPos.y()-size.height()/2.0);
+    // 计算停车位尺寸（与 parkingwidget.cpp 中的计算保持一致）
+    int gap = 10;
+    int startX = 20, startY = 20;
+    int width = parkwidget->width() - 120;
+    int height = parkwidget->height();
+    int W = (width - startX - gap * (parkwidget->col - 1)) / parkwidget->col;
+    int H = (height - startY - gap * (parkwidget->row - 1)) / parkwidget->row;
+    QSize parkSize(W, H / 2);
 
-    QPropertyAnimation*anim=new QPropertyAnimation(proxy,"pos");
-    anim->setDuration(800);
-    anim->setStartValue(startPos);
-    anim->setEndValue(endPos);
-    anim->setEasingCurve(QEasingCurve::OutQuad);//速度：减缓曲线
+    // 使用新的路径规划算法
+    PathResult pathResult = PathPlanner::generateParkingPath(
+        startPos,
+        xGet,
+        yGet,
+        parkwidget->m_parkset,
+        carSize,
+        parkSize,
+        5
+    );
 
-    connect(anim,&QPropertyAnimation::finished,[=](){
+    if (!pathResult.isValid) {
+        QMessageBox::warning(this, "路径规划失败", pathResult.error);
+        isCarEntering = false;
+        return;
+    }
+
+    // 创建平滑路径动画
+    QSequentialAnimationGroup *group = new QSequentialAnimationGroup(this);
+    const QVector<QPointF>& waypoints = pathResult.waypoints;
+
+    for (int i = 0; i < waypoints.size() - 1; ++i) {
+        QPropertyAnimation* anim = new QPropertyAnimation(proxy, "pos");
+        anim->setDuration(40);
+        anim->setStartValue(waypoints[i]);
+        anim->setEndValue(waypoints[i + 1]);
+        anim->setEasingCurve(QEasingCurve::Linear);
+        group->addAnimation(anim);
+    }
+
+    // 倒车入库旋转动画
+    QPropertyAnimation *rotateAnim = new QPropertyAnimation(proxy, "rotation");
+    rotateAnim->setDuration(300);
+    rotateAnim->setStartValue(0);
+    rotateAnim->setEndValue(-8); // 轻微旋转模拟倒车入库
+    rotateAnim->setEasingCurve(QEasingCurve::InOutQuad);
+    group->addAnimation(rotateAnim);
+
+    connect(group, &QSequentialAnimationGroup::finished, [=](){
         parkwidget->m_parkset[xGet][yGet]->haveCar=true;
-        anim->deleteLater();
+        isCarEntering = false; // 重置标志，允许下次点击
+        proxy->setRotation(0); // 恢复旋转角度
+        group->deleteLater();
+        // 更新等待队列显示，实现自动补位
+        showCarInTheWaitQueue(parkwidget);
     });
 
-    anim->start(QAbstractAnimation::DeleteWhenStopped);
+    group->start(QAbstractAnimation::DeleteWhenStopped);
     car->x_col=xGet;
     car->y_row=yGet;
 }
@@ -196,20 +249,65 @@ void MainWindow::moveOut(Car *car)
     parkwidget->m_parkset[car->x_col][car->y_row]->haveCar=false;
 
     Car temp;
-    QSize size=temp.m_size;
-    double endX=parkwidget->width()-size.width()-20;
-    double endY=parkwidget->height()-size.height()-20;
-    QPointF endPos(endX,endY);
-    QPropertyAnimation*anim=new QPropertyAnimation(proxy,"pos");
-    anim->setDuration(800);
-    anim->setStartValue(proxy->pos());
-    anim->setEndValue(endPos);
-    anim->setEasingCurve(QEasingCurve::OutQuad);
+    QSize carSize=temp.m_size;
 
-    connect(anim,&QPropertyAnimation::finished,[=](){
+    // 计算道路参数（与 pathplanner 一致）
+    int gap = 10;
+    int startY = 20;
+    int width = parkwidget->width();
+    int height = parkwidget->height();
+    int parkAreaWidth = width - 120;
+    int W = (parkAreaWidth - 20 - gap * (parkwidget->col - 1)) / parkwidget->col;
+    int H = (height - startY - gap * (parkwidget->row - 1)) / parkwidget->row;
+    int halfH = H / 2;
+
+    // 当前行下方的道路中心（与pathplanner一致）
+    int roadY = startY + car->x_col * (H + gap) + halfH + H / 4 + gap / 2;
+
+    // 右侧垂直车道
+    int dividerX = width - carSize.width();
+    int rightLaneX = dividerX - carSize.width() - 10;
+
+    // 出口位置（右下角）
+    double endX = width - carSize.width() - 20;
+    double endY = height - carSize.height() - 20;
+
+    QPointF currentPos = proxy->pos();
+
+    // 使用分段直线动画：驶出车位 → 沿道路行驶 → 沿右侧车道驶离
+    QSequentialAnimationGroup *group = new QSequentialAnimationGroup(this);
+
+    // 第1段：驶出停车位，进入下方道路
+    QPointF roadEntry(currentPos.x(), roadY - carSize.height() / 2);
+    QPropertyAnimation *anim1 = new QPropertyAnimation(proxy, "pos");
+    anim1->setDuration(200);
+    anim1->setStartValue(currentPos);
+    anim1->setEndValue(roadEntry);
+    anim1->setEasingCurve(QEasingCurve::Linear);
+    group->addAnimation(anim1);
+
+    // 第2段：沿道路水平行驶到右侧车道
+    QPointF rightLaneEntry(rightLaneX, roadY - carSize.height() / 2);
+    QPropertyAnimation *anim2 = new QPropertyAnimation(proxy, "pos");
+    anim2->setDuration(300);
+    anim2->setStartValue(roadEntry);
+    anim2->setEndValue(rightLaneEntry);
+    anim2->setEasingCurve(QEasingCurve::Linear);
+    group->addAnimation(anim2);
+
+    // 第3段：沿右侧车道向下行驶到出口
+    QPointF exitPos(endX, endY);
+    QPropertyAnimation *anim3 = new QPropertyAnimation(proxy, "pos");
+    anim3->setDuration(300);
+    anim3->setStartValue(rightLaneEntry);
+    anim3->setEndValue(exitPos);
+    anim3->setEasingCurve(QEasingCurve::Linear);
+    group->addAnimation(anim3);
+
+    connect(group, &QSequentialAnimationGroup::finished, [=](){
         car->deleteLater();
-        anim->deleteLater();
+        group->deleteLater();
     });
 
-    anim->start(QAbstractAnimation::DeleteWhenStopped);
+    group->start(QAbstractAnimation::DeleteWhenStopped);
 }
