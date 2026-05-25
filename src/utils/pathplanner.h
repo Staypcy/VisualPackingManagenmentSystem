@@ -6,16 +6,10 @@
 #include <QPainterPath>
 #include <QRectF>
 #include <QSize>
+#include "entities/pathresult.h"
 
 class ParkSpace;
 class QGraphicsProxyWidget;
-
-struct PathResult {
-    QVector<QPointF> waypoints;
-    QPainterPath smoothPath;
-    bool isValid;
-    QString error;
-};
 
 class PathPlanner
 {

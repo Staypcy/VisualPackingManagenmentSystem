@@ -1,11 +1,11 @@
-#include "pathplanner.h"
-#include "parkingwidget.h"
+#include "utils/pathplanner.h"
+#include "ui/parkingwidget.h"
 #include <QPropertyAnimation>
 #include <QSequentialAnimationGroup>
 #include <QParallelAnimationGroup>
 #include <QGraphicsProxyWidget>
 #include <QMessageBox>
-#include <QDebug>
+#include "utils/logger.h"
 
 PathResult PathPlanner::generateParkingPath(
     QPointF startPos,
@@ -66,11 +66,11 @@ PathResult PathPlanner::generateParkingPath(
         parkTopLeft.y() + parkSize.height() - carSize.height() - 5
     );
 
-    qDebug() << "========== [路径规划 - 直线道路] ==========";
-    qDebug() << "起点:" << startPos;
-    qDebug() << "目标车位:" << targetRow << "," << targetCol;
-    qDebug() << "目标位置:" << targetPos;
-    qDebug() << "道路Y:" << roadY << " 右侧车道X:" << rightLaneX;
+    LOG_DEBUG() << "========== [路径规划 - 直线道路] ==========";
+    LOG_DEBUG() << "起点:" << startPos;
+    LOG_DEBUG() << "目标车位:" << targetRow << "," << targetCol;
+    LOG_DEBUG() << "目标位置:" << targetPos;
+    LOG_DEBUG() << "道路Y:" << roadY << " 右侧车道X:" << rightLaneX;
 
     // 5个控制点，全部直线连接
     QVector<QPointF> controlPoints;
@@ -90,7 +90,7 @@ PathResult PathPlanner::generateParkingPath(
     // CP5: 垂直驶入停车位
     controlPoints.append(targetPos);
 
-    qDebug() << "控制点:" << controlPoints;
+    LOG_DEBUG() << "控制点:" << controlPoints;
 
     // 碰撞检测
     for (const QPointF& pt : controlPoints) {
@@ -122,8 +122,8 @@ PathResult PathPlanner::generateParkingPath(
         }
     }
 
-    qDebug() << "路径点数量:" << waypoints.size();
-    qDebug() << "=========================================";
+    LOG_DEBUG() << "路径点数量:" << waypoints.size();
+    LOG_DEBUG() << "=========================================";
 
     result.waypoints = waypoints;
     result.smoothPath = straightPath;

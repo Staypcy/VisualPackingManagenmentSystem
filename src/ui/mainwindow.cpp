@@ -1,5 +1,6 @@
-#include "mainwindow.h"
+#include "ui/mainwindow.h"
 #include "./ui_mainwindow.h"
+#include "utils/logger.h"
 #include<QMessageBox>
 #include<QMenu>
 #include<QAction>
@@ -10,22 +11,26 @@
 #include<QPropertyAnimation>
 #include<QSequentialAnimationGroup>
 #include<QParallelAnimationGroup>
-#include "cardetaildialog.h"
-#include "pathplanner.h"
+#include "ui/cardetaildialog.h"
+#include "utils/pathplanner.h"
+#include "services/ifeeservice.h"
+#include "services/iauthservice.h"
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(IFeeService *feeService, IAuthService *authService, QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , m_feeService(feeService)
+    , m_authService(authService)
     , loaddlg(nullptr)
     , parkwidget(nullptr)
     , manageMenu(nullptr)
 {
     ui->setupUi(this);
     this->resize(800,500);
-    loaddlg=new LoadDialog(this);
+    loaddlg=new LoadDialog(m_authService, this);
     connect(ui->action,&QAction::triggered,[=](){
         if(!loaddlg){
-            loaddlg=new LoadDialog(this);
+            loaddlg=new LoadDialog(m_authService, this);
         }
         if(loaddlg->exec()==QDialog::Accepted){
             load_state=loaddlg->load_State;
@@ -60,7 +65,7 @@ MainWindow::MainWindow(QWidget *parent)
 
                     connect(parkwidget->managewidget,&manageSetDialog::sendNewCar,[=](Car* car){
                         parkwidget->m_wait_carSet.push_back(car);
-                        qDebug()<<"成功添加"<<"当前队列车辆数量"<<parkwidget->m_wait_carSet.size();
+                        LOG_DEBUG()<<"成功添加"<<"当前队列车辆数量"<<parkwidget->m_wait_carSet.size();
 
                         QGraphicsProxyWidget*proxy=parkwidget->m_scene->addWidget(car);
                         //动态属性，相当于添加了一个成员变量
@@ -69,7 +74,7 @@ MainWindow::MainWindow(QWidget *parent)
                         
                         // 连接车辆点击事件
                         connect(car, &Car::clicked, this, [=](){
-                            CarDetailDialog* dlg = new CarDetailDialog(car, this);
+                            CarDetailDialog* dlg = new CarDetailDialog(car, m_feeService, this);
                             dlg->show();
                         });
                     });
@@ -109,15 +114,15 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
 
-    setdlg=new SettingDialog(this);
+    setdlg=new SettingDialog(m_feeService, this);
     connect(ui->action_2,&QAction::triggered,[=](){
         if(!setdlg)
-        setdlg=new SettingDialog(this);
+        setdlg=new SettingDialog(m_feeService, this);
         setdlg->show();
         connect(setdlg,&SettingDialog::senddata,[=](int x,int y){
             this->setRowCol(x,y);
             emit sendRowCol(x,y);
-            //qDebug()<<parkwidget->row<<parkwidget->col;
+            //LOG_DEBUG()<<parkwidget->row<<parkwidget->col;
         });
     });
 

@@ -1,8 +1,8 @@
-#include "managesetdialog.h"
+#include "ui/managesetdialog.h"
 #include "ui_managesetdialog.h"
 #include<QColorDialog>
 #include<QTime>
-#include<QDebug>
+#include "utils/logger.h"
 #include<QTimer>
 #include<QMessageBox>
 #include<QDateTime>
@@ -62,7 +62,7 @@ manageSetDialog::manageSetDialog(QWidget *parent)
             }
             
             emit sendNewCar(car);
-            qDebug()<<"发送成功";
+            LOG_DEBUG()<<"发送成功";
             
             // 清空图片选择
             selectedImagePath = "";
@@ -71,37 +71,37 @@ manageSetDialog::manageSetDialog(QWidget *parent)
     });
 
     connect(ui->CarEnter,&QPushButton::clicked,[=](){
-        qDebug() << "========== [车辆进入日志] ==========";
-        qDebug() << "时间:" << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
-        qDebug() << "操作: 手动点击 [车辆进入] 按钮";
+        LOG_DEBUG() << "========== [车辆进入日志] ==========";
+        LOG_DEBUG() << "时间:" << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
+        LOG_DEBUG() << "操作: 手动点击 [车辆进入] 按钮";
 
         int x=rand()%row;
         int y=rand()%col;
-        qDebug() << "随机选择车位: (" << x << "," << y << ")";
-        qDebug() << "停车场规模:" << row << "行 x" << col << "列";
+        LOG_DEBUG() << "随机选择车位: (" << x << "," << y << ")";
+        LOG_DEBUG() << "停车场规模:" << row << "行 x" << col << "列";
 
         emit sendGetXY(x,y);
-        qDebug() << "信号已发送: sendGetXY(" << x << "," << y << ")";
-        qDebug() << "===================================";
+        LOG_DEBUG() << "信号已发送: sendGetXY(" << x << "," << y << ")";
+        LOG_DEBUG() << "===================================";
     });
 
     connect(ui->CarEnterAuto,&QPushButton::clicked,[=](){
         if(!isAutoEntering){
-            qDebug() << "========== [自动驶入日志] ==========";
-            qDebug() << "时间:" << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
-            qDebug() << "操作: 启动自动驶入模式";
-            qDebug() << "自动驶入间隔: 1500ms";
+            LOG_DEBUG() << "========== [自动驶入日志] ==========";
+            LOG_DEBUG() << "时间:" << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
+            LOG_DEBUG() << "操作: 启动自动驶入模式";
+            LOG_DEBUG() << "自动驶入间隔: 1500ms";
 
             isAutoEntering = true;
             ui->CarEnterAuto->setText("停止自动驶入");
             startAutoEnter();
 
-            qDebug() << "状态: 自动驶入已启动";
-            qDebug() << "===================================";
+            LOG_DEBUG() << "状态: 自动驶入已启动";
+            LOG_DEBUG() << "===================================";
         }else{
-            qDebug() << "========== [自动驶入日志] ==========";
-            qDebug() << "时间:" << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
-            qDebug() << "操作: 停止自动驶入模式";
+            LOG_DEBUG() << "========== [自动驶入日志] ==========";
+            LOG_DEBUG() << "时间:" << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
+            LOG_DEBUG() << "操作: 停止自动驶入模式";
 
             isAutoEntering = false;
             ui->CarEnterAuto->setText("车辆进入（auto）");
@@ -172,21 +172,3 @@ void manageSetDialog::updateParkingMap(QVector<QVector<bool>> map)
     parkingMap = map;
 }
 
-void Car::setCar(QString carnum, QString carstyle, QColor color)
-{
-    car_num=carnum;
-    car_color=color;
-    car_style=carstyle;
-    enter_time = QDateTime::currentDateTime();
-    total_fee = 0;
-}
-
-void Car::setCar(QString carnum, QString carstyle, QColor color, QString imagePath)
-{
-    car_num=carnum;
-    car_color=color;
-    car_style=carstyle;
-    car_image_path = imagePath;
-    enter_time = QDateTime::currentDateTime();
-    total_fee = 0;
-}

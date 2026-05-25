@@ -1,13 +1,14 @@
-#include "cardetaildialog.h"
+#include "ui/cardetaildialog.h"
 #include "ui_cardetaildialog.h"
-#include "feeservice.h"
+#include "services/ifeeservice.h"
 #include<QDateTime>
 #include<QMessageBox>
 
-CarDetailDialog::CarDetailDialog(Car* car, QWidget *parent)
+CarDetailDialog::CarDetailDialog(Car* car, IFeeService *feeService, QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::CarDetailDialog)
     , m_car(car)
+    , m_feeService(feeService)
     , m_timer(nullptr)
 {
     ui->setupUi(this);
@@ -42,7 +43,7 @@ void CarDetailDialog::updateFee()
     
     ui->durationLabel->setText(QString("%1小时%2分钟%3秒").arg(hours).arg(minutes).arg(secs));
     
-    double fee = FeeService::getInstance()->calculateFee(m_car->enter_time, now);
+    double fee = m_feeService->calculateFee(m_car->enter_time, now);
     ui->feeLabel->setText(QString("%1元").arg(fee, 0, 'f', 2));
 }
 

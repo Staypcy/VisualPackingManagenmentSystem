@@ -1,7 +1,7 @@
-#include "parkingwidget.h"
+#include "ui/parkingwidget.h"
 #include<QGraphicsProxyWidget>
 #include<QPainter>
-#include<QDebug>
+#include "utils/logger.h"
 #include<QFont>
 
 parkingWidget::parkingWidget(QWidget *parent)
@@ -18,7 +18,7 @@ parkingWidget::parkingWidget(QWidget *parent)
     for(int i=0;i<row;i++){
         m_parkset[i].resize(col);
     }
-    qDebug()<<m_parkset.size()<<" "<<m_parkset[0].size();
+    LOG_DEBUG()<<m_parkset.size()<<" "<<m_parkset[0].size();
 
     setScene(m_scene);
     setFixedSize(800,500);
@@ -251,17 +251,6 @@ bool parkingWidget::parkIsFull()
     }
     isfull=true;
     return true;
-}
-
-ParkSpace::ParkSpace(QWidget *parent)
-    :QWidget(parent),
-    haveCar(false),pos(0,0)
-{
-    setStyleSheet(
-        "background-color: #5cb85c;"
-        "border: 2px solid #3d8b40;"
-        "border-radius: 3px;"
-    );
 }
 
 void parkingWidget::setRowCol(int row1, int col1)

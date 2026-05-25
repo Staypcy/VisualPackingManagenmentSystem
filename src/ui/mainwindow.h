@@ -6,6 +6,8 @@
 #include "parkingwidget.h"
 #include "settingdialog.h"
 
+class IFeeService;
+class IAuthService;
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -18,7 +20,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(IFeeService *feeService, IAuthService *authService, QWidget *parent = nullptr);
     void showCarInTheWaitQueue(parkingWidget *pw);
     ~MainWindow() override;
 
@@ -33,6 +35,8 @@ signals:
     void sendRowCol(int x,int y);
 private:
     Ui::MainWindow *ui;
+    IFeeService *m_feeService;
+    IAuthService *m_authService;
     LoadDialog* loaddlg;
     parkingWidget* parkwidget;
     SettingDialog*setdlg;
